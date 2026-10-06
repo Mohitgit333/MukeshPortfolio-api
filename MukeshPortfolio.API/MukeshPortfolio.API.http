@@ -1,0 +1,6 @@
+@MukeshPortfolio.API_HostAddress = http://localhost:5130
+
+GET {{MukeshPortfolio.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
