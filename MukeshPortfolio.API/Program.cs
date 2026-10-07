@@ -1,17 +1,35 @@
+ï»¿using Microsoft.EntityFrameworkCore;
+using MukeshPortfolio.API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================================================
 // SERVICE REGISTRATION (Dependency Injection Container)
-// Yahan hum saari services register karte hain jo app mein use hongi.
 // =====================================================================
 
-// Controllers ko register karta hai (ProjectsController, SkillsController, etc.)
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        // Circular reference handling (User â†” Projects â†” User)
+        options.SerializerSettings.ReferenceLoopHandling =
+            Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+    });
 
-// OpenAPI/Swagger support
 builder.Services.AddOpenApi();
 
-// CORS policy — React frontend (localhost:5173) se API access ke liye
+// =====================================================================
+// DATABASE CONTEXT REGISTRATION
+// =====================================================================
+// AppDbContext ko DI container mein register karta hai.
+// Scoped lifetime: per HTTP request ek instance.
+// =====================================================================
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// =====================================================================
+// CORS
+// =====================================================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -26,14 +44,12 @@ var app = builder.Build();
 
 // =====================================================================
 // MIDDLEWARE PIPELINE
-// Yahan order important hai — yeh sequence mein execute hote hain.
 // =====================================================================
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 
-    // Swagger UI — development environment mein
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "Mukesh Portfolio API v1");
